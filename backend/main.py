@@ -1,5 +1,6 @@
 # ✅ Put this AT THE VERY TOP - before any other imports
 import os
+from flask import send_from_directory, send_file
 from pathlib import Path
 from dotenv import load_dotenv
 import __main__  # ✅ ADD THIS IMPORT
@@ -45,6 +46,16 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", secrets.token_urlsafe(32))
 app.config["SESSION_TYPE"] = "filesystem"
 app.config["PERMANENT_SESSION_LIFETIME"] = 86400  # 24 h
+import os
+from flask import send_from_directory, send_file
+# Serve React build files
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_react(path):
+    if path != "" and os.path.exists(os.path.join('../frontend/dist', path)):
+        return send_from_directory('../frontend/dist', path)
+    else:
+        return send_file('../frontend/dist/index.html')
 
 # ─── create Discord bot (keep whatever you already have) ─────────
 intents = discord.Intents.default()
@@ -2761,9 +2772,23 @@ async def main():
             logger.error(f"Error closing database: {e}")
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        logger.info("👋 Bot shutdown complete")
-    except Exception as e:
-        logger.error(f"💥 Fatal error: {e}", exc_info=True)
+    import os
+    import threading
+    
+    port = int(os.environ.get("PORT", 5000))
+    
+    # Start Discord bot in background thread
+    def run_bot():
+        try:
+            bot.run(DISCORD_TOKEN)
+        except Exception as e:
+            print(f"Bot error: {e}")
+    
+    bot_thread = threading.Thread(target=run_bot, daemon=True)
+    bot_thread.start()
+    
+    # Build frontend first
+    os.system("cd ../frontend && npm install && npm run build")
+    
+    # Start Flask with SocketIO
+    socketio.run(app, host='0.0.0.0', port=port, debug=False)
