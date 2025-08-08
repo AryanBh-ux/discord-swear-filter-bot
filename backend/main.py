@@ -36,7 +36,15 @@ import json
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("discord.gateway").setLevel(logging.WARNING)
 logging.getLogger("discord.client").setLevel(logging.WARNING)
+# Completely disable all non-critical logging
+logging.getLogger('werkzeug').disabled = True
+logging.getLogger('urllib3').disabled = True
+logging.getLogger('discord').setLevel(logging.ERROR)
+logging.getLogger('socket_events').disabled = True
+logging.getLogger('database').disabled = True
 
+# Disable Flask development server logs
+os.environ['WERKZEUG_RUN_MAIN'] = 'true'
 # ─── create Flask app ───────────────────────────────
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", secrets.token_urlsafe(32))
@@ -451,7 +459,7 @@ async def on_message(message: discord.Message):
         if not is_profane:
             return
             
-        logger.info(f"Filtered message in {message.guild.name}: {len(detected_words)} words")
+        #logger.info(f"Filtered message in {message.guild.name}: {len(detected_words)} words")
         
     except Exception as e:
         logger.error(f"Error checking profanity: {e}")
@@ -502,7 +510,7 @@ async def on_message(message: discord.Message):
                     if (message.author.guild_permissions.administrator or 
                         message.author.guild_permissions.manage_guild or
                         message.author.id == message.guild.owner_id):
-                        logger.info(f"⚠️ Skipped timeout for {message.author.name} - has admin/mod permissions")
+                        #logger.info(f"⚠️ Skipped timeout for {message.author.name} - has admin/mod permissions")
                     else:
                         # ✅ CORRECT TIMEOUT IMPLEMENTATION
                         timeout_until = discord.utils.utcnow() + timedelta(minutes=timeout_minutes)
@@ -534,7 +542,7 @@ async def on_message(message: discord.Message):
                 except Exception as outer_timeout_error:
                     logger.error(f"❌ OUTER ERROR in timeout logic: {outer_timeout_error}")
             else:
-                logger.info(f"📊 User {message.author.name} has {new_warning_count}/{timeout_threshold} warnings - no timeout yet")
+                #logger.info(f"📊 User {message.author.name} has {new_warning_count}/{timeout_threshold} warnings - no timeout yet")
             
             # ✅ Check if user should be kicked (only for delete_timeout_kick)
             if action_type == 'delete_timeout_kick':
@@ -546,7 +554,7 @@ async def on_message(message: discord.Message):
                             if not (message.author.guild_permissions.kick_members or 
                                    message.author.guild_permissions.administrator):
                                 await message.guild.kick(message.author, reason=f"Swear filter: {new_warning_count} violations")
-                                logger.info(f"✅ KICKED user {message.author.name}")
+                                #logger.info(f"✅ KICKED user {message.author.name}")
                                 
                                 kick_embed = discord.Embed(
                                     title="👢 User Kicked",
@@ -556,7 +564,7 @@ async def on_message(message: discord.Message):
                                 kick_embed.add_field(name="Final Violation Count", value=f"{new_warning_count}/{kick_threshold}", inline=True)
                                 await message.channel.send(embed=kick_embed, delete_after=25)
                             else:
-                                logger.info(f"Skipped kick for {message.author.name} - has moderation permissions")
+                                #logger.info(f"Skipped kick for {message.author.name} - has moderation permissions")
                         else:
                             logger.warning(f"No permission to kick members in guild {message.guild.id}")
                     except Exception as kick_error:
@@ -609,7 +617,7 @@ async def on_message(message: discord.Message):
             user_avatar=str(message.author.avatar.url) if message.author.avatar else None,  # ✅ FIXED: Store avatar
             channel_name=message.channel.name  # ✅ FIXED: Store channel name
         )
-        logger.info(f"✅ Logged violation to database for user {message.author.name}")
+        #logger.info(f"✅ Logged violation to database for user {message.author.name}")
     except Exception as e:
         logger.error(f"Error storing violation in database: {e}")
 
@@ -629,7 +637,7 @@ async def on_message(message: discord.Message):
                 'timestamp': discord.utils.utcnow().isoformat()
             }
             __main__.emit_filter_action(message.guild.id, violation_data)
-            logger.info(f"✅ Emitted violation to dashboard for guild {message.guild.id}")
+            #logger.info(f"✅ Emitted violation to dashboard for guild {message.guild.id}")
         else:
             logger.debug("Socket events not available - skipping dashboard emission")
     except Exception as e:
@@ -2776,5 +2784,6 @@ if __name__ == "__main__":
         debug=False,
         allow_unsafe_werkzeug=True
     )
+
 
 
