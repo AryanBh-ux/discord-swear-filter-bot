@@ -2751,12 +2751,13 @@ if __name__ == "__main__":
 
     print(f"✅ Flask API server with Socket.IO started on port {port}")
 
-    # ✅ FIXED: Remove allow_unsafe_werkzeug and add production settings
+        # ✅ FIXED: Remove allow_unsafe_werkzeug and add production settings
     socketio_app.run(
         app,
         host='0.0.0.0',
         port=port,
         debug=False,
         use_reloader=False,
-        log_output=False
+        allow_unsafe_werkzeug=True
     )
+
