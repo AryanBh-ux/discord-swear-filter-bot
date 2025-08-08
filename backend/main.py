@@ -2774,6 +2774,11 @@ async def main():
 if __name__ == "__main__":
     import os
     import threading
+    # Build frontend first
+    print("Building React frontend...")
+    subprocess.run(["npm", "install"], cwd="../frontend", check=True)
+    subprocess.run(["npm", "run", "build"], cwd="../frontend", check=True)
+    print("Frontend built successfully!")
     
     port = int(os.environ.get("PORT", 5000))
     
@@ -2792,3 +2797,4 @@ if __name__ == "__main__":
     
     # Start Flask with SocketIO
     socketio.run(app, host='0.0.0.0', port=port, debug=False)
+
