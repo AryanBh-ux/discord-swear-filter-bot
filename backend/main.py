@@ -2742,17 +2742,7 @@ if __name__ == "__main__":
     from flask_socketio import SocketIO
     
     port = int(os.environ.get("PORT", 8080))
-
-    print("Building React frontend...")
-    try:
-        # Build frontend first
-        subprocess.run(["npm", "install"], cwd="../frontend", check=True)
-        subprocess.run(["npm", "run", "build"], cwd="../frontend", check=True)
-        print("Frontend built successfully!")
-    except subprocess.CalledProcessError as e:
-        print(f"Frontend build failed: {e}")
-        exit(1)
-
+    
     # Create Socket.IO app
     socketio_app = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
@@ -2785,3 +2775,4 @@ if __name__ == "__main__":
         debug=False,
         allow_unsafe_werkzeug=True
     )
+
