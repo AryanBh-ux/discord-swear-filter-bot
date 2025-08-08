@@ -414,43 +414,40 @@ async def send_enhanced_log_message(guild_id: int, user, channel, blocked_words:
         
     except Exception as e:
         logger.error(f"Failed to send log message: {e}")
-
 @bot.event
 async def on_message(message: discord.Message):
     """Enhanced message handler with WORKING timeout/kick system + real-time dashboard updates"""
     
-    # ── Skip non-guild messages and bot messages ────────────────
+    # Skip non-guild messages and bot messages
     if not message.guild or message.author.bot:
         return
 
-    # ── Skip if member has admin permissions ────────────────
+    # Skip if member has admin permissions
     if message.author.guild_permissions.administrator:
         return
 
-    # ── Get guild settings ────────────────
+    # Get guild settings
     try:
         guild_data = await guild_cache.get_guild_data(message.guild.id)
         if not guild_data or not guild_data.get('enabled', True):
             return
     except Exception as e:
-        logger.error(f"Error getting guild data for {message.guild.id}: {e}")
         return
 
-    # ── Skip if channel is bypassed ────────────────
+    # Skip if channel is bypassed
     bypassed_channels = guild_data.get('bypass_channels', [])
     if str(message.channel.id) in bypassed_channels:
         return
 
-    # ── Skip if user has bypassed role ────────────────
+    # Skip if user has bypassed role
     bypassed_roles = guild_data.get('bypass_roles', [])
     user_role_ids = [str(role.id) for role in message.author.roles]
     if any(role_id in bypassed_roles for role_id in user_role_ids):
         return
 
-    # ── Filter the message ────────────────
+    # Filter the message
     swear_filter = guild_filters.get(message.guild.id)
     if not swear_filter:
-        logger.warning(f"No filter found for guild {message.guild.id}")
         return
 
     try:
@@ -459,20 +456,17 @@ async def on_message(message: discord.Message):
         if not is_profane:
             return
             
-        #logger.info(f"Filtered message in {message.guild.name}: {len(detected_words)} words")
-        
     except Exception as e:
-        logger.error(f"Error checking profanity: {e}")
         return
 
-    # ── Get action configuration ────────────────
+    # Get action configuration
     action_type = guild_data.get('action_type', 'delete_only')
 
     try:
-        # ✅ STEP 1: Always delete the message first
+        # STEP 1: Always delete the message first
         await message.delete()
         
-        # ✅ STEP 2: Send deletion notification with user ping
+        # STEP 2: Send deletion notification with user ping
         embed = discord.Embed(
             title="🚫 Message Deleted",
             description=f"{message.author.mention}, your message contained inappropriate language and has been removed.",
@@ -486,13 +480,13 @@ async def on_message(message: discord.Message):
         notification_msg = await message.channel.send(embed=embed, delete_after=15)
         
     except discord.Forbidden:
-        logger.warning(f"No permission to delete message in {message.guild.id}")
+        pass
     except discord.NotFound:
         pass  # Message already deleted
     except Exception as e:
-        logger.error(f"Error deleting message: {e}")
+        pass
 
-    # ✅ STEP 3: Handle timeout/kick escalation if configured
+    # STEP 3: Handle timeout/kick escalation if configured
     if action_type in ['delete_timeout', 'delete_timeout_kick']:
         try:
             db = get_database()
@@ -501,23 +495,20 @@ async def on_message(message: discord.Message):
             timeout_threshold = guild_data.get('timeout_after_swears', 3)
             timeout_minutes = guild_data.get('timeout_minutes', 5)
             
-            logger.info(f"🔍 User {message.author.name} warning count: {new_warning_count} (threshold: {timeout_threshold})")
-            
-            # ✅ Check if user should be timed out
+            # Check if user should be timed out
             if new_warning_count >= timeout_threshold:
                 try:
                     # Only skip ADMINS and MODS, not regular members
                     if (message.author.guild_permissions.administrator or 
                         message.author.guild_permissions.manage_guild or
                         message.author.id == message.guild.owner_id):
-                        #logger.info(f"⚠️ Skipped timeout for {message.author.name} - has admin/mod permissions")
+                        pass
                     else:
-                        # ✅ CORRECT TIMEOUT IMPLEMENTATION
+                        # CORRECT TIMEOUT IMPLEMENTATION
                         timeout_until = discord.utils.utcnow() + timedelta(minutes=timeout_minutes)
                         
                         try:
                             await message.author.timeout(timeout_until, reason=f"Swear filter: {new_warning_count} violations")
-                            logger.info(f"✅ SUCCESSFULLY TIMED OUT user {message.author.name} for {timeout_minutes} minutes")
                             
                             # Send timeout notification
                             timeout_embed = discord.Embed(
@@ -531,20 +522,16 @@ async def on_message(message: discord.Message):
                             await message.channel.send(embed=timeout_embed, delete_after=20)
                             
                         except discord.Forbidden:
-                            logger.error(f"❌ FORBIDDEN: Bot lacks permission to timeout {message.author.name}")
-                            logger.error(f"Bot role position: {message.guild.me.top_role.position}")
-                            logger.error(f"User role position: {message.author.top_role.position}")
+                            pass
                         except discord.HTTPException as http_error:
-                            logger.error(f"❌ HTTP ERROR timing out {message.author.name}: {http_error}")
+                            pass
                         except Exception as timeout_error:
-                            logger.error(f"❌ UNKNOWN ERROR timing out {message.author.name}: {timeout_error}")
+                            pass
                             
                 except Exception as outer_timeout_error:
-                    logger.error(f"❌ OUTER ERROR in timeout logic: {outer_timeout_error}")
-            else:
-                #logger.info(f"📊 User {message.author.name} has {new_warning_count}/{timeout_threshold} warnings - no timeout yet")
+                    pass
             
-            # ✅ Check if user should be kicked (only for delete_timeout_kick)
+            # Check if user should be kicked (only for delete_timeout_kick)
             if action_type == 'delete_timeout_kick':
                 kick_threshold = guild_data.get('kick_after_swears', 5)
                 
@@ -554,7 +541,6 @@ async def on_message(message: discord.Message):
                             if not (message.author.guild_permissions.kick_members or 
                                    message.author.guild_permissions.administrator):
                                 await message.guild.kick(message.author, reason=f"Swear filter: {new_warning_count} violations")
-                                #logger.info(f"✅ KICKED user {message.author.name}")
                                 
                                 kick_embed = discord.Embed(
                                     title="👢 User Kicked",
@@ -563,17 +549,13 @@ async def on_message(message: discord.Message):
                                 )
                                 kick_embed.add_field(name="Final Violation Count", value=f"{new_warning_count}/{kick_threshold}", inline=True)
                                 await message.channel.send(embed=kick_embed, delete_after=25)
-                            else:
-                                #logger.info(f"Skipped kick for {message.author.name} - has moderation permissions")
-                        else:
-                            logger.warning(f"No permission to kick members in guild {message.guild.id}")
                     except Exception as kick_error:
-                        logger.error(f"Error kicking user {message.author.name}: {kick_error}")
+                        pass
         
         except Exception as e:
-            logger.error(f"Error in advanced action handling: {e}")
+            pass
 
-    # ── Log to designated Discord log channel ────────────────
+    # Log to designated Discord log channel
     log_channel_id = guild_data.get('log_channel_id')
     if log_channel_id:
         try:
@@ -599,30 +581,28 @@ async def on_message(message: discord.Message):
                 
                 await log_channel.send(embed=log_embed)
         except Exception as e:
-            logger.error(f"Error logging to channel: {e}")
+            pass
 
-    # ── Store violation in database with COMPLETE user information ────────────────
+    # Store violation in database with COMPLETE user information
     try:
         db = get_database()
         
-        # ✅ CRITICAL: Use the UPDATED log_filter_action function
+        # CRITICAL: Use the UPDATED log_filter_action function
         await db.log_filter_action(
             guild_id=message.guild.id,
             user_id=message.author.id,
             channel_id=message.channel.id,
             message_content=message.content,
             blocked_words=detected_words,
-            action_taken=action_type,  # ✅ NEW: Uses new action types
-            user_name=message.author.display_name,  # ✅ FIXED: Store user name
-            user_avatar=str(message.author.avatar.url) if message.author.avatar else None,  # ✅ FIXED: Store avatar
-            channel_name=message.channel.name  # ✅ FIXED: Store channel name
+            action_taken=action_type,
+            user_name=message.author.display_name,
+            user_avatar=str(message.author.avatar.url) if message.author.avatar else None,
+            channel_name=message.channel.name
         )
-        #logger.info(f"✅ Logged violation to database for user {message.author.name}")
     except Exception as e:
-        logger.error(f"Error storing violation in database: {e}")
+        pass
 
-    # ── Emit to dashboard for real-time updates ────────────────
-    # ── OPTIONAL: Emit to dashboard for real-time updates ────────────────
+    # OPTIONAL: Emit to dashboard for real-time updates
     try:
         # Check if emit function is available (from socket_events.py)
         if hasattr(__main__, 'emit_filter_action'):
@@ -637,12 +617,8 @@ async def on_message(message: discord.Message):
                 'timestamp': discord.utils.utcnow().isoformat()
             }
             __main__.emit_filter_action(message.guild.id, violation_data)
-            #logger.info(f"✅ Emitted violation to dashboard for guild {message.guild.id}")
-        else:
-            logger.debug("Socket events not available - skipping dashboard emission")
     except Exception as e:
-        logger.error(f"Error emitting to dashboard: {e}")
-
+        pass
 
     # Process commands
     await bot.process_commands(message)
@@ -2784,6 +2760,7 @@ if __name__ == "__main__":
         debug=False,
         allow_unsafe_werkzeug=True
     )
+
 
 
 
