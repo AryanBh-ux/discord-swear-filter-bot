@@ -26,10 +26,7 @@ from flask import session
 from typing import Dict, List, Optional, Set, Tuple, Any
 from pathlib import Path
 from collections import defaultdict, deque
-
-
 from flask_socketio import SocketIO
-socketio_app = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 from datetime import datetime
 from flask import Flask, request, jsonify
 import threading
@@ -46,6 +43,7 @@ app.config["SESSION_TYPE"] = "filesystem"
 app.config["PERMANENT_SESSION_LIFETIME"] = 86400  # 24 h
 import os
 from flask import send_from_directory, send_file
+socketio_app = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 # Serve React build files
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
@@ -2788,3 +2786,4 @@ if __name__ == "__main__":
         debug=False,
         allow_unsafe_werkzeug=True
     )
+
