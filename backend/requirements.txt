@@ -1,0 +1,13 @@
+discord.py>=2.3.0
+flask>=2.3.0
+flask-socketio>=5.3.0
+flask-session>=0.5.0
+python-socketio>=5.8.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+supabase>=1.0.0
+asyncio
+logging
+pathlib
+collections
+datetime

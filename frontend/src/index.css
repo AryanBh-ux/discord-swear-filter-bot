@@ -1,0 +1,26 @@
+html,body,#root{height:100%}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .btn-discord {
+    @apply inline-flex items-center justify-center rounded-full py-4 px-8 text-lg font-semibold text-white transition-all duration-200 transform hover:scale-105;
+    background: #5865F2;
+  }
+  
+  .btn-discord:hover {
+    @apply bg-blue-600;
+  }
+
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+html, body, #root {
+  height: 100%;
+}
