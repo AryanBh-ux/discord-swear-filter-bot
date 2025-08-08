@@ -2723,7 +2723,6 @@ async def main():
 
 if __name__ == "__main__":
     import os
-    import subprocess
     from flask_socketio import SocketIO
     
     port = int(os.environ.get("PORT", 8080))
@@ -2752,15 +2751,12 @@ if __name__ == "__main__":
 
     print(f"✅ Flask API server with Socket.IO started on port {port}")
 
-    # ONLY ONE SERVER START
+    # ✅ FIXED: Remove allow_unsafe_werkzeug and add production settings
     socketio_app.run(
         app,
         host='0.0.0.0',
         port=port,
         debug=False,
-        allow_unsafe_werkzeug=True
+        use_reloader=False,
+        log_output=False
     )
-
-
-
-
