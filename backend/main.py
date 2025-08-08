@@ -2729,7 +2729,7 @@ import os
 # Create Socket.IO app at module level
 socketio_app = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
-# WSGI entry point for Gunicorn (BEFORE the if __name__ block)
+# WSGI entry point for Gunicorn - ALWAYS create application
 def create_app():
     """Create and configure the app for production deployment"""
     # Initialize everything
@@ -2743,38 +2743,24 @@ def create_app():
         except Exception as e:
             print(f"Bot error: {e}")
     
+    import threading
     bot_thread = threading.Thread(target=run_bot, daemon=True)
     bot_thread.start()
     
     print("✅ Socket.IO events configured for Gunicorn")
     return socketio_app
 
+# Create application variable UNCONDITIONALLY for Gunicorn
+application = create_app()
+
 if __name__ == "__main__":
-    # Local development mode (won't be used by Gunicorn)
+    # Local development mode - use Flask dev server
     port = int(os.environ.get("PORT", 8080))
     
-    # Set up socket events
-    try:
-        setup_socket_events(socketio_app, bot)
-        print("✅ Socket.IO events configured")
-    except Exception as e:
-        print(f"❌ Socket.IO setup failed: {e}")
-
-    # Start Discord bot in background thread
-    def run_bot():
-        try:
-            print("🚀 Starting Discord bot...")
-            bot.run(DISCORD_TOKEN)
-        except Exception as e:
-            print(f"Bot error: {e}")
-
-    bot_thread = threading.Thread(target=run_bot, daemon=True)
-    bot_thread.start()
-
     print(f"✅ Flask API server with Socket.IO started on port {port}")
     
     # This won't run when using Gunicorn
-    socketio_app.run(
+    application.run(
         app,
         host='0.0.0.0',
         port=port,
@@ -2782,7 +2768,3 @@ if __name__ == "__main__":
         use_reloader=False,
         allow_unsafe_werkzeug=True
     )
-
-# For Gunicorn - this runs when imported as module
-if __name__ != "__main__":
-    application = create_app()
