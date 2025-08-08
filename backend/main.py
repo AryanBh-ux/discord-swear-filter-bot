@@ -1,5 +1,6 @@
 # ✅ Put this AT THE VERY TOP - before any other imports
 import os
+import __main__
 from flask import send_from_directory, send_file
 from pathlib import Path
 from dotenv import load_dotenv
@@ -2775,4 +2776,5 @@ if __name__ == "__main__":
         debug=False,
         allow_unsafe_werkzeug=True
     )
+
 
