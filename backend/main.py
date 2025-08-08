@@ -3,7 +3,6 @@ import os
 from flask import send_from_directory, send_file
 from pathlib import Path
 from dotenv import load_dotenv
-import __main__  # ✅ ADD THIS IMPORT
 import time      # ✅ ADD THIS IMPORT (needed for timestamp generation)
 import discord
 from datetime import timedelta
@@ -30,6 +29,7 @@ from collections import defaultdict, deque
 
 
 from flask_socketio import SocketIO
+socketio_app = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 from datetime import datetime
 from flask import Flask, request, jsonify
 import threading
@@ -330,26 +330,6 @@ async def on_ready():
     except Exception as e:
         logger.error(f"❌ Socket.IO setup failed: {e}")
         
-
-flask_thread = threading.Thread(target=run_flask, daemon=True)
-flask_thread.start()
-logger.info("✅ Flask API server with Socket.IO started on port 5000")
-
-@sio.event
-def connect():
-    logger.info("✅ Dashboard WebSocket connected")
-
-@sio.event 
-def disconnect():
-    global dashboard_connected
-    dashboard_connected = False
-    logger.warning("⚠️ Dashboard WebSocket disconnected")
-
-@sio.event
-def reconnect():
-    global dashboard_connected
-    dashboard_connected = True
-    logger.info("✅ Dashboard WebSocket reconnected")
 
 # 🔧 FIX 6: STREAMLINED LOG MESSAGE FUNCTION (No more race conditions)
 async def send_enhanced_log_message(guild_id: int, user, channel, blocked_words: list, original_content: str, action_taken: str):
@@ -2761,23 +2741,50 @@ async def main():
 
 if __name__ == "__main__":
     import os
-    import threading
+    import subprocess
+    from flask_socketio import SocketIO
     
-    port = int(os.environ.get("PORT", 5000))
-    
+    port = int(os.environ.get("PORT", 8080))
+
+    print("Building React frontend...")
+    try:
+        # Build frontend first
+        subprocess.run(["npm", "install"], cwd="../frontend", check=True)
+        subprocess.run(["npm", "run", "build"], cwd="../frontend", check=True)
+        print("Frontend built successfully!")
+    except subprocess.CalledProcessError as e:
+        print(f"Frontend build failed: {e}")
+        exit(1)
+
+    # Create Socket.IO app
+    socketio_app = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+
+    # Set up socket events
+    try:
+        setup_socket_events(socketio_app, bot)
+        print("✅ Socket.IO events configured")
+    except Exception as e:
+        print(f"❌ Socket.IO setup failed: {e}")
+
     # Start Discord bot in background thread
     def run_bot():
         try:
+            print("🚀 Starting Discord bot...")
             bot.run(DISCORD_TOKEN)
         except Exception as e:
             print(f"Bot error: {e}")
-    
+
+    import threading
     bot_thread = threading.Thread(target=run_bot, daemon=True)
     bot_thread.start()
-    
-    # Build frontend first
-    os.system("cd ../frontend && npm install && npm run build")
-    
-    # Start Flask with SocketIO
-    socketio_app.run(app, host='0.0.0.0', port=port, debug=False)
 
+    print(f"✅ Flask API server with Socket.IO started on port {port}")
+
+    # ONLY ONE SERVER START
+    socketio_app.run(
+        app,
+        host='0.0.0.0',
+        port=port,
+        debug=False,
+        allow_unsafe_werkzeug=True
+    )
