@@ -38,8 +38,6 @@ import json
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("discord.gateway").setLevel(logging.WARNING)
 logging.getLogger("discord.client").setLevel(logging.WARNING)
-# WebSocket client for dashboard communication
-sio = socketio.Client()
 
 # ─── create Flask app ───────────────────────────────
 app = Flask(__name__)
@@ -2782,3 +2780,4 @@ if __name__ == "__main__":
     
     # Start Flask with SocketIO
     socketio_app.run(app, host='0.0.0.0', port=port, debug=False)
+
