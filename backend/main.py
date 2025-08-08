@@ -29,7 +29,7 @@ from pathlib import Path
 from collections import defaultdict, deque
 
 
-import socketio
+from flask_socketio import SocketIO
 from datetime import datetime
 from flask import Flask, request, jsonify
 import threading
@@ -332,16 +332,6 @@ async def on_ready():
     except Exception as e:
         logger.error(f"❌ Socket.IO setup failed: {e}")
         
-def run_flask():
-    from flask_socketio import SocketIO
-    socketio_app = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
-    socketio_app.run(
-        app,
-        host='0.0.0.0',
-        port=5000,
-        debug=False,
-        allow_unsafe_werkzeug=True
-    )
 
 flask_thread = threading.Thread(target=run_flask, daemon=True)
 flask_thread.start()
@@ -2774,11 +2764,6 @@ async def main():
 if __name__ == "__main__":
     import os
     import threading
-    # Build frontend first
-    print("Building React frontend...")
-    subprocess.run(["npm", "install"], cwd="../frontend", check=True)
-    subprocess.run(["npm", "run", "build"], cwd="../frontend", check=True)
-    print("Frontend built successfully!")
     
     port = int(os.environ.get("PORT", 5000))
     
@@ -2796,5 +2781,4 @@ if __name__ == "__main__":
     os.system("cd ../frontend && npm install && npm run build")
     
     # Start Flask with SocketIO
-    socketio.run(app, host='0.0.0.0', port=port, debug=False)
-
+    socketio_app.run(app, host='0.0.0.0', port=port, debug=False)
