@@ -43,7 +43,6 @@ app.config["SESSION_TYPE"] = "filesystem"
 app.config["PERMANENT_SESSION_LIFETIME"] = 86400  # 24 h
 import os
 from flask import send_from_directory, send_file
-socketio_app = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 # Serve React build files
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
@@ -2786,4 +2785,3 @@ if __name__ == "__main__":
         debug=False,
         allow_unsafe_werkzeug=True
     )
-
